@@ -1,10 +1,18 @@
 #pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+}
+#endif
+
 #include <interface/base_video_reader.h>
 
 namespace video {
 namespace ffmpeg {
 
-class FFmpegVideoReader : public interface::BaseVideoReader {
+class FFmpegVideoReader : public BaseVideoReader {
 public:
 	FFmpegVideoReader();
 	virtual ~FFmpegVideoReader() override;
@@ -13,8 +21,6 @@ public:
 
 	ErrorCode Open() override;
 	void Close() override;
-	ErrorCode SetVideoConfig(const VideoConfig& video_config) override;
-	ErrorCode SetEventCallback(const VideoConfig& video_config) override;
 	ErrorCode ReceivePacket(Packet& packet) override;
 
 private:
@@ -29,7 +35,7 @@ private:
 };
 
 struct FFmpegVideoReaderCreator {
-	std::shared_ptr<FFmpegVideoReader> operator() () {
+	std::shared_ptr<BaseVideoReader> operator() () {
 		return std::static_pointer_cast<BaseVideoReader>(std::make_shared<FFmpegVideoReader>());
 	}
 };

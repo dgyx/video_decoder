@@ -1,3 +1,5 @@
+#include <cstring>
+#include <glog/logging.h>
 #include "ffmpeg/ffmpeg_video_reader.h"
 
 namespace video {
@@ -13,7 +15,7 @@ FFmpegVideoReader::~FFmpegVideoReader() {
 }
 
 ErrorCode FFmpegVideoReader::Open() {
-	std::lock_guard<std::mutex> lock(mutex_);
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
 	if (NULL != av_format_context_) {
 		LOG(ERROR) << "video reader has been opened:";
 		return ErrorCode::kReaderHasBeenCreated;
@@ -22,7 +24,7 @@ ErrorCode FFmpegVideoReader::Open() {
 	const std::string& url = video_config_["url"];
 	if (url.empty()) {
 		LOG(ERROR) << "url is empty";
-		return ErrorCode::kCreatReaderFail;
+		return ErrorCode::kCreateReaderFail;
 	}
 
 	if (NULL != av_options_) {
@@ -42,7 +44,7 @@ ErrorCode FFmpegVideoReader::Open() {
 
 	const std::string& stimeout = video_config_["stimeout"];
 	if (!stimeout.empty()) {
-		av_dict_set(&av_options_, "stimeout", stimeout,c_str(), 0);
+		av_dict_set(&av_options_, "stimeout", stimeout.c_str(), 0);
 	}
 
 	const std::string& buffer_size = video_config_["buffer_size"];
@@ -85,7 +87,7 @@ ErrorCode FFmpegVideoReader::Open() {
 			mp4toannexb_avbsf_name = "hevc_mp4toannexb";
 			break;
 		default:
-			LOG(ERROR) << "unsupport codec type! codec id :" << av_frmat_context_->streams[video_stream_index_]->codecpar->codec_id;
+			LOG(ERROR) << "unsupport codec type! codec id :" << av_format_context_->streams[video_stream_index_]->codecpar->codec_id;
 			return ErrorCode::kCreateReaderFail;
 	}
 
@@ -112,11 +114,11 @@ ErrorCode FFmpegVideoReader::Open() {
 		av_bsf_init(dump_extra_avbsf_);
 	}
 
-	return ErrorCode::kOK;
+	return ErrorCode::kOk;
 }
 
 void FFmpegVideoReader::Release() {
-	std::lock_guard<std::mutex> lock(mutex_);
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
 	if (NULL != dump_extra_avbsf_) {
 		av_bsf_free(&dump_extra_avbsf_);
 		dump_extra_avbsf_ = NULL;
@@ -124,7 +126,7 @@ void FFmpegVideoReader::Release() {
 
 	if (NULL != mp4toannexb_avbsf_) {
 		av_bsf_free(&mp4toannexb_avbsf_);
-		mp4toannexb_avbsf = NULL;
+		mp4toannexb_avbsf_ = NULL;
 	}
 
 	if (NULL != av_format_context_) {
@@ -143,13 +145,14 @@ void FFmpegVideoReader::Close() {
 }
 
 ErrorCode FFmpegVideoReader::ReceivePacket(Packet& packet) {
-	std::lock_guard<std::mutex> lock(mutex_);
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
 	if (NULL == av_format_context_) {
 		if (ErrorCode::kOk != Open()) {
 			return ErrorCode::kCreateReaderFail;
 		}
 	}
 
+	AVPacket av_packet;
 	do {
 		av_init_packet(&av_packet);
 		if (av_read_frame(av_format_context_, &av_packet) < 0) {
@@ -203,7 +206,7 @@ ErrorCode FFmpegVideoReader::ReceivePacket(Packet& packet) {
 			packet.codec_type = CodecType::kH264;
 			break;
 		case AV_CODEC_ID_HEVC:
-			packet.codec_type = CodecType::kHEVC;
+			packet.codec_type = CodecType::kHevc;
 			break;
 		default:
 			packet.codec_type = CodecType::kUnknown;
@@ -214,8 +217,6 @@ ErrorCode FFmpegVideoReader::ReceivePacket(Packet& packet) {
 	packet.height = codecpar->height;
 
 	return ErrorCode::kOk;
-}
-
 }
 
 }//namespace ffmpeg

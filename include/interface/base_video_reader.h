@@ -25,14 +25,14 @@ public:
 
 	virtual ErrorCode Open() = 0;
 	virtual void Close() = 0;
-	virtual ErrorCode SetVideoConfig(const VideoConfig& video_config) = 0;
-	virtual ErrorCode SetEventCallback(EventCallback event_callback) = 0;
+	virtual void SetVideoConfig(const VideoConfig& video_config);
+	virtual void SetEventCallback(EventCallback event_callback);
 	virtual ErrorCode ReceivePacket(Packet& packet) = 0;
 
 protected:
 	VideoConfig video_config_;
 	EventCallback event_callback_;
-	std::mutex mutex_;
+	std::recursive_mutex mutex_;
 };
 
 

@@ -1,4 +1,5 @@
-#include "interface/base_video_decode.h"
+#include <glog/logging.h>
+#include "interface/base_video_decoder.h"
 
 namespace video {
 
@@ -6,7 +7,7 @@ std::size_t BaseVideoDecoder::kMaxFrameQueueSize = 25;
 
 BaseVideoDecoder::BaseVideoDecoder() 
 	: device_id_(-1), 
-	  channel_id(-1),
+	  channel_id_(-1),
 	  format_type_(FormatType::kBgrPacket),
 	  pump_frame_rate_(0),
 	  max_frame_queue_size_(kMaxFrameQueueSize) {
@@ -19,22 +20,22 @@ void BaseVideoDecoder::SetVideoConfig(VideoConfig& video_config) {
 	try {
 		std::lock_guard<std::mutex> lock(mutex_);
 		if (video_config.end() != video_config.find("channel_id")) {
-			channel_id_ = std::atoi(video_config["channel_id"]);
+			channel_id_ = std::atoi(video_config["channel_id"].c_str());
 		}
 		if (video_config.end() != video_config.find("device_id_")) {
-			device_id_ = std::atoi(video_config["device_id_"];
+			device_id_ = std::atoi(video_config["device_id_"].c_str());
 		}
 		if (video_config.end() != video_config.find("format_type")) {
-			format_type_ = std::atoi(video_config["format_type"];
+			format_type_ = static_cast<FormatType>(std::atoi(video_config["format_type"].c_str()));
 		}
 		if (video_config.end() != video_config.find("pump_frame_rate")) {
-			pump_frame_rate_ = static_cast<std::size_t>(std::atol(video_config["pump_frame_rate"]);
+			pump_frame_rate_ = static_cast<std::size_t>(std::atol(video_config["pump_frame_rate"].c_str()));
 		}
 		if (video_config.end() != video_config.find("max_frame_queue_size")) {
-			max_frame_queue_size_ = static_cast<std::size_t>(std::atol(video_config["max_frame_queue_size"]);
+			max_frame_queue_size_ = static_cast<std::size_t>(std::atol(video_config["max_frame_queue_size"].c_str()));
 		}
 	} catch (std::exception& e) {
-		LOG(AWRNING) << "[video decoder] video config error!" << e.what();
+		LOG(WARNING) << "[video decoder] video config error!" << e.what();
 	}
 }
 
@@ -56,7 +57,7 @@ ErrorCode BaseVideoDecoder::ReceiveFrame(std::chrono::milliseconds timeout, Fram
 	return ErrorCode::kOk;
 }
 
-ErrorCode BaseVideoDecoder::SendFrame(const Frame& frame) {
+void BaseVideoDecoder::SendFrame(const Frame& frame) {
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
 		if (frame_callback_) {

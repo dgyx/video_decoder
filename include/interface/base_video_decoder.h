@@ -24,7 +24,7 @@ public:
 	virtual void SetVideoConfig(VideoConfig& video_config);
 	void SetFrameCallback(FrameCallback callback);
 	virtual ErrorCode ReceiveFrame(std::chrono::milliseconds timeout, Frame& frame);
-	virtual ErrorCode SendFrame(const Frame& frame);
+	virtual void SendFrame(const Frame& frame);
 	virtual ErrorCode SendPacket(const Packet& packet) = 0;
 
 	static std::size_t kMaxFrameQueueSize;

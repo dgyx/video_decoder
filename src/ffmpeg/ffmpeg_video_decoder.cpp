@@ -1,4 +1,9 @@
+#include <glog/logging.h>
+#include <cstdint>
+#include <cstddef>
+#include <memory>
 #include "ffmpeg/ffmpeg_video_decoder.h"
+
 
 
 namespace video {
@@ -14,8 +19,8 @@ FFmpegVideoDecoder::~FFmpegVideoDecoder() {
 		av_codec_context_ = NULL;
 	}
 	if (NULL != sws_context_) {
-		sws_freeContext(sws_context);
-		sws_context = NULL;
+		sws_freeContext(sws_context_);
+		sws_context_ = NULL;
 	}
 }
 
@@ -117,11 +122,10 @@ ErrorCode FFmpegVideoDecoder::SendPacket(const Packet& packet) {
 	}
 
 	for (auto& av_frame : av_frame_list) {
-		if (0 != pump_frame_rate_ && 0 != current_frame_id++ % pump_frame_rate_) {
+		if (0 != pump_frame_rate_ && 0 != current_frame_id_++ % pump_frame_rate_) {
 			continue;
 		}
 
-		AVCodecContext* av_codec_context = av_codec_context_;
 		if (NULL == sws_context_) {
 			sws_context_ = sws_getContext(av_codec_context_->width, av_codec_context_->height, av_codec_context_->pix_fmt,
 					av_codec_context_->width, av_codec_context_->height, AV_PIX_FMT_BGR24, 0, NULL, NULL, NULL);
@@ -138,7 +142,7 @@ ErrorCode FFmpegVideoDecoder::SendPacket(const Packet& packet) {
 		frame.height = av_frame->height;
 		frame.step = 3 * av_frame->width;
 		frame.data_size = 3 * frame.width * frame.height;
-		frame.data = std::shared_ptr<std:uint8_t>(new std::uint8_t[frame.data_size], [](std::uint8_t* data) { delete [] data; });
+		frame.data = std::shared_ptr<std::uint8_t>(new std::uint8_t[frame.data_size], [](std::uint8_t* data) { delete [] data; });
 
 		std::uint8_t* data[1] = { frame.data.get() };
 		int linesize[1] = { static_cast<int>(frame.step) };

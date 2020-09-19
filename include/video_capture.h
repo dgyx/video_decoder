@@ -25,8 +25,12 @@ public:
 	void SetChannelVideoConfig(int channel_id, const VideoConfig& video_config);
 	void SetChannelEventCallback(int channel_id, EventCallback callback);
 	void SetChannelFrameCallback(int channel_id, FrameCallback callback);
-	void SetChannelVideoReaderCreator(std::function<std::shared_ptr<BaseVideoReader>()> video_reader_creator);
-	void SetChannelVideoDecoderCreator(std::function<std::shared_ptr<BaseVideoDecoder>()> video_decoder_creator);
+	void SetVideoReaderCreator(std::function<std::shared_ptr<BaseVideoReader>()> video_reader_creator) {
+		video_reader_creator_ = video_reader_creator;
+	}
+	void SetVideoDecoderCreator(std::function<std::shared_ptr<BaseVideoDecoder>()> video_decoder_creator) {
+		video_decoder_creator_ = video_decoder_creator;
+	}
 	
 	ErrorCode StartAllChannel();
 	void StopAllChannel();
